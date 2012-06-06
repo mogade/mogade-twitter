@@ -30,6 +30,10 @@ while (lid = redis.spop(set_key)) != nil
     config.oauth_token = twitter['token']
     config.oauth_token_secret = twitter['secret']
   end
-  message = twitter['message'].gsub('%user%', score['un']).gsub('%score%', score['d']['p'].to_s)
-  Twitter.update(message)
+  core_message = twitter['message'].gsub('%score%', score['d']['p'].to_s)
+  message = core_message.gsub('%user%', score['un'])
+  if message.lenght > 140
+    message = core_message.gsub('%user%', 'some1')
+  end
+  Twitter.update(message) if message.length <= 140
 end
