@@ -1,4 +1,3 @@
-
 require_relative('settings')
 
 settings = Settings.new(ARGV[0] || 'development')
@@ -7,10 +6,18 @@ set_key = 'twitter:daily'
 
 exit if redis.scard(set_key) == 0
 
+
+require 'active_support/core_ext'
 require 'twitter'
 Twitter.configure do |config|
   config.consumer_key = settings.twitter['key']
   config.consumer_secret = settings.twitter['secret']
+end
+
+def daily_stamp(offset)
+  now = Time.now.utc
+  time = now.midnight + -3600 * (offset || 0)
+  return time > now ? time - 86400 : time
 end
 
 mongo = settings.mongo
@@ -31,10 +38,13 @@ begin
     twitter = twitters.find_one({:lid => lid})
     next if twitter.nil?
 
-    leaderboard = leaderboards.find_one(lid, {:fields => {:_id => false, :t => true}})
+    leaderboard = leaderboards.find_one(lid, {:fields => {:_id => false, :t => true, :o => true}})
     next if leaderboard.nil?
+
     direction = leaderboard['t'] == 1 ? :desc : :asc
-    score = scores.find_one({:lid => lid}, {:fields => {:_id => false, 'd.p' => true, 'un' => true}, :limit => 1, :sort => ['d.p', direction]})
+    stamp = daily_stamp(leaderboard['o'])
+    score = scores.find_one({:lid => lid, 'd.s' => stamp}, {:fields => {:_id => false, 'd.p' => true, 'un' => true}, :limit => 1, :sort => ['d.p', direction]})
+    next if score.nil?
 
     Twitter.configure do |config|
       config.oauth_token = twitter['token']
