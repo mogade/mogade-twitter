@@ -50,7 +50,7 @@ begin
       config.oauth_token = twitter['token']
       config.oauth_token_secret = twitter['secret']
     end
-    core_message = twitter['message'].gsub('%score%', score['d']['p'].to_s)
+    core_message = twitter['dm'].gsub('%score%', score['d']['p'].to_s)
     message = core_message.gsub('%user%', score['un'])
     if message.length > 140
       message = core_message.gsub('%user%', 'some1')
